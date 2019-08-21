@@ -1,0 +1,27 @@
+#
+# Licensed under the Apache License, Version 2.0 (the “License”);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an “AS IS” BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+[Unit]
+Description=Airflow webserver daemon
+[Service]
+PIDFile=/home/uwcc-admin/airflow_home/airflow/webserver.pid
+User=uwcc-admin
+Group=uwcc-admin
+Type=forking
+ExecStart=/bin/bash -c "source /home/uwcc-admin/airflow_home/venv/bin/activate ; /home/uwcc-admin/airflow_home/venv/bin/airflow initdb; /home/uwcc-admin/airflow_home/venv/bin/airflow webserver --pid /home/uwcc-admin/airflow_home/airflow/airflow-webserver.pid &"
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s TERM $MAINPID
+Restart=on-failure
+RestartSec=42s
+PrivateTmp=true
+[Install]
+WantedBy=multi-user.target
