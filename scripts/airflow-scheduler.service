@@ -13,11 +13,10 @@
 [Unit]
 Description=Airflow scheduler daemon
 [Service]
-WorkingDirectory=/home/uwcc-admin/airflow_home
-User=uwcc-admin
-Group=uwcc-admin
+User=curw
+Group=curw
 Type=simple
-ExecStart=/bin/bash -c "source /home/uwcc-admin/airflow_home/venv/bin/activate ; /home/uwcc-admin/airflow_home/venv/bin/airflow scheduler --pid /home/uwcc-admin/airflow_home/airflow/airflow-scheduler.pid"
+ExecStart=/bin/bash -c "airflow scheduler --pid /opt/airflow/airflow-scheduler.pid"
 Restart=always
 RestartSec=5s
 [Install]
