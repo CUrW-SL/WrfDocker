@@ -1,10 +1,12 @@
+import json
 import logging
 import math
 import multiprocessing
 import os
 import shutil
 import traceback
-from datetime import datetime, time, timedelta
+from datetime import datetime, timedelta
+import time
 import getopt
 import sys
 from urllib.error import HTTPError, URLError
@@ -16,6 +18,16 @@ logging.basicConfig(filename='/mnt/disks/data/logs/gfs_data.log',
                     level=logging.DEBUG,
                     format=LOG_FORMAT)
 log = logging.getLogger()
+
+
+def create_dir_if_not_exists(path):
+    """
+    create directory(if needed recursively) or paths
+    :param path: string : directory path
+    :return: string
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 
 def file_exists_nonempty(filename):
@@ -109,7 +121,7 @@ def datetime_floor(timestamp, floor_sec):
 
 
 def get_appropriate_gfs_inventory(wrf_config):
-    st = datetime_floor(datetime.strptime(wrf_config['start_date'], '%Y-%m-%d_%H:%M'), 3600 * wrf_config['gfs_step'])
+    st = datetime_floor(datetime.strptime(wrf_config['gfs_date'], '%Y-%m-%d_%H:%M'), 3600 * wrf_config['gfs_step'])
     # if the time difference between now and start time is lt gfs_lag, then the time will be adjusted
     if (datetime.utcnow() - st).total_seconds() <= wrf_config['gfs_lag'] * 3600:
         floor_val = datetime_floor(st - timedelta(hours=wrf_config['gfs_lag']), 6 * 3600)
@@ -122,42 +134,39 @@ def get_appropriate_gfs_inventory(wrf_config):
     return gfs_date, gfs_cycle, start_inv
 
 
-def download_gfs_data(wrf_conf):
+def download_gfs_data(gfs_config):
     """
     :param start_date: '2017-08-27_00:00'
     :return:
     """
-    print('Downloading GFS data: START')
     log.info('Downloading GFS data: START')
     try:
-        gfs_date, gfs_cycle, start_inv = get_appropriate_gfs_inventory(wrf_conf)
-        inventories = get_gfs_inventory_url_dest_list(gfs_date, wrf_conf['period'],
-                                                      wrf_conf['gfs_url'],
-                                                      wrf_conf['gfs_inv'], wrf_conf['gfs_step'],
-                                                      gfs_cycle, wrf_conf['gfs_res'],
-                                                      wrf_conf['gfs_dir'], start=start_inv)
-        gfs_threads = wrf_conf['gfs_threads']
-        print('Following data will be downloaded in %d parallel threads\n%s' % (gfs_threads, '\n'.join(
-            ' '.join(map(str, i)) for i in inventories)))
+        gfs_date, gfs_cycle, start_inv = get_appropriate_gfs_inventory(gfs_config)
+        inventories = get_gfs_inventory_url_dest_list(gfs_date, gfs_config['period'],
+                                                      gfs_config['gfs_url'],
+                                                      gfs_config['gfs_inv'], gfs_config['gfs_step'],
+                                                      gfs_cycle, gfs_config['gfs_res'],
+                                                      gfs_config['gfs_download_path'], start=start_inv)
+        gfs_threads = gfs_config['gfs_threads']
         log.info('Following data will be downloaded in %d parallel threads\n%s' % (gfs_threads, '\n'.join(
             ' '.join(map(str, i)) for i in inventories)))
 
         start_time = time.time()
-        download_parallel(inventories, procs=gfs_threads, retries=wrf_conf['gfs_retries'],
-                          delay=wrf_conf['gfs_delay'], secondary_dest_dir=None)
+        download_parallel(inventories, procs=gfs_threads, retries=gfs_config['gfs_retries'],
+                          delay=gfs_config['gfs_delay'], secondary_dest_dir=None)
 
         elapsed_time = time.time() - start_time
         log.info('Downloading GFS data: END Elapsed time: %f' % elapsed_time)
         log.info('Downloading GFS data: END')
-        print('Downloading GFS data: END')
         return gfs_date, start_inv
     except Exception as e:
-        print('Downloading GFS data error: {}'.format(str(e)))
         log.error('Downloading GFS data error: {}'.format(str(e)))
 
 
 try:
-    workflow = '0'
+    print('GFS data downloading process triggered...')
+    workflow = '1'
+    run_day = '0'
     data_hour = '00'
     model = ''
     run_date = ''
@@ -167,11 +176,11 @@ try:
             "hour=", "model=", "workflow=", "run_date=", "path="
         ])
     except getopt.GetoptError:
+        print('Input error.')
         sys.exit(2)
     for opt, arg in opts:
         if opt in ("-h", "--hour"):
             data_hour = arg  # '00'|'06'|'12'|'18'
-            sys.exit(2)
         elif opt in ("-m", "--model"):
             model = arg  # 'A'|'C'|'E'|'SE'
         elif opt in ("-w", "--workflow"):
@@ -180,10 +189,17 @@ try:
             path = arg  #
         elif opt in ("-d", "--run_date"):
             run_date = arg  # '2019-08-21'
-            sys.exit(2)
     print("GFS data hour : ", data_hour)
     print("GFS run_date : ", run_date)
-
+    with open('gfs_config.json') as json_file:
+        gfs_config = json.load(json_file)
+        gfs_download_path = os.path.join(path, 'wrf{}/d{}/{}/gfs/{}'.format(workflow, run_day, data_hour, run_date))
+        create_dir_if_not_exists(gfs_download_path)
+        gfs_config['gfs_download_path'] = gfs_download_path
+        gfs_date = '2019-08-03_00:00'
+        gfs_date = '{}_{}:00'.format(run_date, data_hour)
+        gfs_config['gfs_date'] = gfs_date
+        download_gfs_data(gfs_config)
 except Exception as e:
     traceback.print_exc()
 
