@@ -170,7 +170,7 @@ try:
     data_hour = '00'
     model = ''
     run_date = ''
-    path = '/mnt/disks/data'
+    path = '/mnt/disks/data/wrf'
     try:
         opts, args = getopt.getopt(sys.argv[1:], "h:m:w:d:p:", [
             "hour=", "model=", "workflow=", "run_date=", "path="
