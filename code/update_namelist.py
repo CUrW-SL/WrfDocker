@@ -7,6 +7,7 @@ import os
 import sys
 import traceback
 import pkg_resources
+import constants
 
 
 class UnableFindResource(Exception):
@@ -90,15 +91,22 @@ def replace_file_with_values_with_dates(wrf_config, src, dest, aux_dict, start_d
 
 def replace_namelist_wps(wrf_config, start_date=None, end_date=None):
     print('Replacing namelist.wps...')
-    if os.path.exists(wrf_config['namelist_wps']):
-        f = wrf_config['namelist_wps']
-    else:
-        f = get_resource_path(os.path.join('execution', constants.DEFAULT_NAMELIST_WPS_TEMPLATE))
-
-    dest = os.path.join(get_wps_dir(wrf_config['wrf_home']), 'namelist.wps')
+    src = wrf_config['namelist_template']
+    dest = wrf_config['namelist_updated']
+    print('replace_namelist_input|source : ', src)
     print('replace_namelist_wps|dest: ', dest)
     start_date = datetime.strptime(wrf_config['start_date'], '%Y-%m-%d_%H:%M')
-    replace_file_with_values_with_dates(wrf_config, f, dest, 'namelist_wps_dict', start_date, end_date)
+    replace_file_with_values_with_dates(wrf_config, src, dest, 'namelist_wps_dict', start_date, end_date)
+
+
+def replace_namelist_input(wrf_config, start_date=None, end_date=None):
+    print('Replacing namelist.input ...')
+    src = wrf_config['namelist_template']
+    dest = wrf_config['namelist_updated']
+    print('replace_namelist_input|source : ', src)
+    print('replace_namelist_input|dest : ', dest)
+    start_date = datetime.strptime(wrf_config['start_date'], '%Y-%m-%d_%H:%M')
+    replace_file_with_values_with_dates(wrf_config, src, dest, 'namelist_input_dict', start_date, end_date)
 
 
 try:
@@ -132,18 +140,26 @@ try:
     print("GFS data hour : ", data_hour)
     print("GFS run_date : ", run_date)
     print("namelist : ", namelist)
-    namelist_path = ''
     with open('config.json') as json_file:
         config = json.load(json_file)
+        config['start_date'] = '{}_{}:00'.format(run_date, data_hour)
         gfs_data_path = os.path.join(path, 'wrf{}/d{}/{}/gfs/{}'.format(workflow, run_day, data_hour, run_date))
         wps_path = os.path.join(path, 'wrf{}/d{}/{}/wps/{}'.format(workflow, run_day, data_hour, run_date))
         gfs_date = '{}_{}:00'.format(run_date, data_hour)
         if namelist == 'wps':
-            namelist_path = os.path.join(path, 'template', 'namelist.wps')
-            config['namelist'] = namelist_path
+            namelist_template_path = os.path.join(path, 'template', 'wps', model, 'namelist.wps')
+            config['namelist_template'] = namelist_template_path
+            namelist_updated_path = os.path.join(path, 'wrf{}/d{}/{}/{}/{}'.format(workflow,
+                                    run_day, data_hour, model, run_date), 'namelist.wps')
+            config['namelist_updated'] = namelist_updated_path
+            replace_namelist_wps(config)
         elif namelist == 'wrf':
-            namelist_path = os.path.join(path, 'template', 'namelist.input')
-            config['namelist'] = namelist_path
+            namelist_template_path = os.path.join(path, 'template', 'wrf', model, 'namelist.input')
+            config['namelist_template'] = namelist_template_path
+            namelist_updated_path = os.path.join(path,'wrf{}/d{}/{}/{}/{}'.format(workflow,
+                                        run_day, data_hour, model, run_date), 'namelist.wps')
+            config['namelist_updated'] = namelist_updated_path
+            replace_namelist_input(config)
 except Exception as e:
     traceback.print_exc()
 
