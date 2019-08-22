@@ -1,0 +1,11 @@
+{
+  "wrf_home": "/home/Build_WRF",
+  "gfs_dir": "/home/Build_WRF/gfs",
+  "geog_dir": "/home/Build_WRF/geog",
+  "nfs_dir": "/home/Build_WRF/nfs",
+  "archive_dir": "/home/Build_WRF/archive",
+  "period": 3,
+  "namelist_input": "namelist.input",
+  "namelist_wps": "namelist.wps",
+  "procs": 4
+}

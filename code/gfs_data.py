@@ -191,7 +191,7 @@ try:
             run_date = arg  # '2019-08-21'
     print("GFS data hour : ", data_hour)
     print("GFS run_date : ", run_date)
-    with open('gfs_config.json') as json_file:
+    with open('config.json') as json_file:
         gfs_config = json.load(json_file)
         gfs_download_path = os.path.join(path, 'wrf{}/d{}/{}/gfs/{}'.format(workflow, run_day, data_hour, run_date))
         create_dir_if_not_exists(gfs_download_path)

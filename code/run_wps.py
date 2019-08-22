@@ -152,6 +152,7 @@ def create_dir_if_not_exists(path):
     """
     if not os.path.exists(path):
         os.makedirs(path)
+    return path
 
 
 def move_files_with_prefix(src_dir, prefix, dest_dir):
@@ -212,10 +213,8 @@ def get_gfs_data_url_dest_tuple(url, inv, date_str, cycle, fcst_id, res, gfs_dir
 
 def run_wps(wrf_config):
     log.info('Running WPS: START')
-    wrf_home = wrf_config['wrf_home']
-    wps_dir = get_wps_dir(wrf_home)
-    output_dir = create_dir_if_not_exists(
-        os.path.join(wrf_config['nfs_dir'], 'results', wrf_config['run_id'], 'wps'))
+    wps_dir = wrf_config['wps_dir']
+    output_dir = wps_dir
     print('run_wps|output_dir : ', output_dir)
 
     log.info('Cleaning up files')
@@ -266,7 +265,7 @@ def run_wps(wrf_config):
     log.info('Running WPS: DONE')
 
     log.info('Zipping metgrid data')
-    metgrid_zip = os.path.join(wps_dir, wrf_config['run_id'] + '_metgrid.zip')
+    metgrid_zip = os.path.join(wps_dir,'metgrid.zip')
     create_zip_with_prefix(wps_dir, 'met_em.d*', metgrid_zip)
 
     log.info('Moving metgrid data')
@@ -281,7 +280,7 @@ try:
     data_hour = '00'
     model = ''
     run_date = ''
-    path = '/mnt/disks/data'
+    path = '/mnt/disks/data/wrf'
     try:
         opts, args = getopt.getopt(sys.argv[1:], "h:m:w:d:p:", [
             "hour=", "model=", "workflow=", "run_date=", "path="
@@ -302,13 +301,17 @@ try:
             run_date = arg  # '2019-08-21'
     print("GFS data hour : ", data_hour)
     print("GFS run_date : ", run_date)
-    with open('wps_config.json') as json_file:
-        gfs_config = json.load(json_file)
-        gfs_download_path = os.path.join(path, 'wrf{}/d{}/{}/gfs/{}'.format(workflow, run_day, data_hour, run_date))
-        create_dir_if_not_exists(gfs_download_path)
-        gfs_config['gfs_download_path'] = gfs_download_path
-        gfs_date = '2019-08-03_00:00'
-        gfs_date = '{}_{}:00'.format(run_date, data_hour)
-        gfs_config['gfs_date'] = gfs_date
+    with open('config.json') as json_file:
+        wps_config = json.load(json_file)
+        gfs_data_path = os.path.join(path, 'wrf{}/d{}/{}/gfs/{}'.format(workflow, run_day, data_hour, run_date))
+        wps_path = os.path.join(path, 'wrf{}/d{}/{}/wps/{}'.format(workflow, run_day, data_hour, run_date))
+        create_dir_if_not_exists(wps_path)
+        if os.path.exists(path):
+            wps_config['gfs_dir'] = gfs_data_path
+            wps_config['wps_dir'] = wps_path
+            gfs_date = '{}_{}:00'.format(run_date, data_hour)
+            wps_config['gfs_date'] = gfs_date
+            run_wps(wps_config)
 except Exception as e:
     traceback.print_exc()
+
