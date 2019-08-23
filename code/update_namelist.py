@@ -157,7 +157,7 @@ try:
             namelist_template_path = os.path.join(path, 'template', 'wrf', model, 'namelist.input')
             config['namelist_template'] = namelist_template_path
             namelist_updated_path = os.path.join(path,'wrf{}/d{}/{}/{}/{}'.format(workflow,
-                                        run_day, data_hour, model, run_date), 'namelist.wps')
+                                        run_day, data_hour, model, run_date), 'namelist.input')
             config['namelist_updated'] = namelist_updated_path
             replace_namelist_input(config)
 except Exception as e:

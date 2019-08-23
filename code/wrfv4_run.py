@@ -483,7 +483,6 @@ def backup_dir(path):
             for file in bck_files:
                 shutil.move(os.path.join(path, file), bck_dir)
             return bck_dir
-
     return None
 
 
